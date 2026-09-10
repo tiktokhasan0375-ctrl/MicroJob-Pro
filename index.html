@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - MicroJob Pro</title>
+    <title>MicroJob Pro - Earn Money Online</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -14,28 +15,110 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .notification { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-        .tab-active { background-color: #2563eb; color: white; }
+        .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: bold; }
+        .job-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-50 min-h-screen">
 
 <!-- Notification Area -->
 <div id="notification" class="notification hidden"></div>
 
-<!-- Admin Dashboard (Direct Access) -->
-<div id="admin-dashboard">
+<!-- Auth Section (Login/Register) -->
+<div id="auth-section" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-purple-600">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-6">
+            <div class="inline-block bg-blue-600 text-white p-4 rounded-full mb-4">
+                <i class="fas fa-briefcase text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">MicroJob Pro</h1>
+            <p class="text-gray-500 mt-2">Earn money by completing simple tasks</p>
+        </div>
+        
+        <!-- Tab Switcher -->
+        <div class="flex mb-6 bg-gray-100 rounded-lg p-1">
+            <button onclick="switchAuthTab('login')" id="login-tab" class="flex-1 py-2 rounded-md bg-white shadow font-semibold text-blue-600">Login</button>
+            <button onclick="switchAuthTab('register')" id="register-tab" class="flex-1 py-2 rounded-md text-gray-600">Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400"></i>
+                    <input type="email" id="login-email" required class="w-full p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-3.5 text-gray-400"></i>
+                    <input type="password" id="login-password" required class="w-full p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                <i class="fas fa-sign-in-alt mr-2"></i>Login
+            </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="space-y-4 hidden">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <div class="relative">
+                    <i class="fas fa-user absolute left-3 top-3.5 text-gray-400"></i>
+                    <input type="text" id="reg-name" required class="w-full p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400"></i>
+                    <input type="email" id="reg-email" required class="w-full p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Phone (bKash/Nagad)</label>
+                <div class="relative">
+                    <i class="fas fa-phone absolute left-3 top-3.5 text-gray-400"></i>
+                    <input type="tel" id="reg-phone" required class="w-full p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password (min 6 chars)</label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-3.5 text-gray-400"></i>
+                    <input type="password" id="reg-password" required minlength="6" class="w-full p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+                <i class="fas fa-user-plus mr-2"></i>Create Account
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Main App Section (After Login) -->
+<div id="app-section" class="hidden">
     <!-- Top Navigation -->
-    <nav class="bg-red-600 text-white shadow-lg sticky top-0 z-50">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-3">
-                    <i class="fas fa-user-shield text-2xl"></i>
-                    <h1 class="text-2xl font-bold">Admin Panel (No Login)</h1>
+                    <div class="bg-blue-600 text-white p-2 rounded-lg">
+                        <i class="fas fa-briefcase text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800">MicroJob Pro</h1>
                 </div>
-                <div class="text-sm bg-red-700 px-3 py-1 rounded">
-                    Direct Access Mode
+                <div class="flex items-center space-x-4">
+                    <span id="user-email" class="text-sm text-gray-600 hidden md:inline"></span>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 transition">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -45,23 +128,20 @@
     <div class="bg-white border-b shadow-sm">
         <div class="container mx-auto px-4">
             <div class="flex space-x-1 overflow-x-auto">
-                <button onclick="switchAdminTab('overview')" id="admin-tab-overview" class="tab-active px-6 py-3 font-semibold whitespace-nowrap">
-                    <i class="fas fa-chart-line mr-2"></i>Overview
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-6 py-3 font-semibold text-blue-600 border-b-3 border-blue-600 whitespace-nowrap">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
                 </button>
-                <button onclick="switchAdminTab('postjob')" id="admin-tab-postjob" class="px-6 py-3 font-semibold text-gray-600 hover:text-red-600 whitespace-nowrap">
-                    <i class="fas fa-plus-circle mr-2"></i>Post Job
+                <button onclick="switchTab('jobs')" id="tab-jobs" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600 whitespace-nowrap">
+                    <i class="fas fa-tasks mr-2"></i>Available Jobs
                 </button>
-                <button onclick="switchAdminTab('submissions')" id="admin-tab-submissions" class="px-6 py-3 font-semibold text-gray-600 hover:text-red-600 whitespace-nowrap">
-                    <i class="fas fa-clipboard-check mr-2"></i>Submissions
+                <button onclick="switchTab('mywork')" id="tab-mywork" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600 whitespace-nowrap">
+                    <i class="fas fa-clipboard-check mr-2"></i>My Work
                 </button>
-                <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-6 py-3 font-semibold text-gray-600 hover:text-red-600 whitespace-nowrap">
-                    <i class="fas fa-users mr-2"></i>Users
+                <button onclick="switchTab('withdraw')" id="tab-withdraw" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600 whitespace-nowrap">
+                    <i class="fas fa-money-bill-wave mr-2"></i>Withdraw
                 </button>
-                <button onclick="switchAdminTab('withdrawals')" id="admin-tab-withdrawals" class="px-6 py-3 font-semibold text-gray-600 hover:text-red-600 whitespace-nowrap">
-                    <i class="fas fa-money-bill-wave mr-2"></i>Withdrawals
-                </button>
-                <button onclick="switchAdminTab('seed')" id="admin-tab-seed" class="px-6 py-3 font-semibold text-gray-600 hover:text-red-600 whitespace-nowrap">
-                    <i class="fas fa-database mr-2"></i>Seed Jobs
+                <button onclick="switchTab('api')" id="tab-api" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600 whitespace-nowrap">
+                    <i class="fas fa-code mr-2"></i>API Access
                 </button>
             </div>
         </div>
@@ -70,126 +150,207 @@
     <!-- Content Container -->
     <div class="container mx-auto px-4 py-6">
         
-        <!-- Overview Tab -->
-        <div id="admin-view-overview" class="fade-in">
+        <!-- Dashboard Tab -->
+        <div id="view-dashboard" class="fade-in">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
-                    <p class="text-gray-500 text-sm">Total Users</p>
-                    <h3 class="text-3xl font-bold mt-2 text-gray-800"><span id="admin-stat-users">0</span></h3>
+                <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-blue-100 text-sm">Total Earnings</p>
+                            <h3 class="text-3xl font-bold mt-2">$<span id="stat-total">0.00</span></h3>
+                        </div>
+                        <i class="fas fa-dollar-sign text-3xl text-blue-200"></i>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
-                    <p class="text-gray-500 text-sm">Total Jobs</p>
-                    <h3 class="text-3xl font-bold mt-2 text-gray-800"><span id="admin-stat-jobs">0</span></h3>
+                <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-green-100 text-sm">Available Balance</p>
+                            <h3 class="text-3xl font-bold mt-2">$<span id="stat-available">0.00</span></h3>
+                        </div>
+                        <i class="fas fa-wallet text-3xl text-green-200"></i>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
-                    <p class="text-gray-500 text-sm">Pending Submissions</p>
-                    <h3 class="text-3xl font-bold mt-2 text-gray-800"><span id="admin-stat-pending">0</span></h3>
+                <div class="bg-gradient-to-br from-yellow-500 to-orange-500 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-yellow-100 text-sm">Pending</p>
+                            <h3 class="text-3xl font-bold mt-2">$<span id="stat-pending">0.00</span></h3>
+                        </div>
+                        <i class="fas fa-clock text-3xl text-yellow-200"></i>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
-                    <p class="text-gray-500 text-sm">Total Withdrawals</p>
-                    <h3 class="text-3xl font-bold mt-2 text-gray-800">$<span id="admin-stat-withdrawals">0.00</span></h3>
+                <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-purple-100 text-sm">Completed Tasks</p>
+                            <h3 class="text-3xl font-bold mt-2"><span id="stat-tasks">0</span></h3>
+                        </div>
+                        <i class="fas fa-check-circle text-3xl text-purple-200"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-history text-blue-600 mr-2"></i>Recent Activity
+                </h3>
+                <div id="activity-list" class="space-y-3">
+                    <p class="text-gray-500">Loading activity...</p>
                 </div>
             </div>
         </div>
 
-        <!-- Post Job Tab -->
-        <div id="admin-view-postjob" class="hidden">
+        <!-- Available Jobs Tab -->
+        <div id="view-jobs" class="hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                <h2 class="text-2xl font-bold mb-2"><i class="fas fa-tasks mr-2"></i>Available Tasks</h2>
+                <p class="text-blue-100">Complete tasks below to earn money instantly!</p>
+            </div>
+            <div id="jobs-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="loader"></div>
+            </div>
+        </div>
+
+        <!-- My Work Tab -->
+        <div id="view-mywork" class="hidden">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i class="fas fa-clipboard-check text-blue-600 mr-2"></i>My Submissions
+            </h2>
+            <div id="mywork-list" class="space-y-4">
+                <p class="text-gray-500">Loading your submissions...</p>
+            </div>
+        </div>
+
+        <!-- Withdraw Tab -->
+        <div id="view-withdraw" class="hidden">
             <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>Request Withdrawal
+                    </h3>
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg mb-4">
+                        <p class="text-green-800 font-semibold">Available Balance: $<span id="withdraw-balance">0.00</span></p>
+                        <p class="text-sm text-green-600 mt-1">Minimum withdrawal: $5.00</p>
+                    </div>
+                    <form id="withdraw-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                            <input type="number" id="withdraw-amount" step="0.01" min="5" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                            <select id="withdraw-method" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="bkash">bKash</option>
+                                <option value="nagad">Nagad</option>
+                                <option value="rocket">Rocket</option>
+                                <option value="bank">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                            <input type="text" id="withdraw-account" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+                            <i class="fas fa-paper-plane mr-2"></i>Submit Withdrawal Request
+                        </button>
+                    </form>
+                </div>
+
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-plus-circle text-red-600 mr-2"></i>Post New Job
+                        <i class="fas fa-history text-blue-600 mr-2"></i>Withdrawal History
                     </h3>
-                    <form id="admin-job-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Title</label>
-                            <input type="text" id="admin-job-title" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Description</label>
-                            <textarea id="admin-job-desc" rows="3" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500"></textarea>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
+                    <div id="withdraw-history" class="space-y-3">
+                        <p class="text-gray-500">No withdrawal requests yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Tab -->
+        <div id="view-api" class="hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <h3 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-code text-purple-600 mr-2"></i>API Access for Developers
+                    </h3>
+                    <p class="text-gray-600 mb-4">Integrate your website with our platform. Post jobs automatically from your site to ours.</p>
+                    
+                    <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm mb-6">
+                        <p class="text-yellow-400 mb-2">Your API Key:</p>
+                        <p id="user-api-key" class="text-white break-all">Loading...</p>
+                        <button onclick="generateApiKey()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded text-xs hover:bg-blue-700 transition">
+                            <i class="fas fa-sync-alt mr-1"></i>Generate New Key
+                        </button>
+                    </div>
+
+                    <h4 class="text-lg font-bold mb-2">API Endpoint</h4>
+                    <code class="block bg-gray-100 p-3 rounded text-sm mb-4">POST /api/create-job</code>
+
+                    <h4 class="text-lg font-bold mb-2">Request Body (JSON)</h4>
+                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto">{
+  "apiKey": "YOUR_API_KEY",
+  "title": "Job Title",
+  "description": "Job Description",
+  "price": 0.10,
+  "link": "https://example.com/task",
+  "category": "youtube"
+}</pre>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-vial text-purple-600 mr-2"></i>Test API Connection
+                    </h3>
+                    <form id="api-test-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium mb-1">Price ($)</label>
-                                <input type="number" id="admin-job-price" step="0.01" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500">
+                                <label class="block text-sm font-medium mb-1">Job Title</label>
+                                <input type="text" id="api-test-title" value="Test Job" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">Category</label>
-                                <select id="admin-job-cat" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500">
-                                    <option value="general">General</option>
-                                    <option value="youtube">YouTube</option>
-                                    <option value="facebook">Facebook</option>
-                                    <option value="instagram">Instagram</option>
-                                    <option value="twitter">Twitter</option>
-                                    <option value="signup">Sign Up</option>
-                                    <option value="survey">Survey</option>
-                                </select>
+                                <label class="block text-sm font-medium mb-1">Price ($)</label>
+                                <input type="number" id="api-test-price" value="0.10" step="0.01" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">Task Link</label>
-                            <input type="url" id="admin-job-link" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500">
+                            <input type="url" id="api-test-link" value="https://google.com" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
                         </div>
-                        <button type="submit" class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition">
-                            <i class="fas fa-paper-plane mr-2"></i>Post Job
+                        <button type="submit" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
+                            <i class="fas fa-paper-plane mr-2"></i>Send Test Request
                         </button>
                     </form>
+                    <div id="api-test-result" class="mt-4"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Submissions Tab -->
-        <div id="admin-view-submissions" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-xl font-bold mb-4 flex items-center">
-                    <i class="fas fa-clipboard-check text-yellow-600 mr-2"></i>Pending Submissions
-                </h3>
-                <div id="admin-pending-submissions" class="space-y-3">
-                    <p class="text-gray-500">Loading...</p>
-                </div>
-            </div>
-        </div>
+    </div>
+</div>
 
-        <!-- Users Tab -->
-        <div id="admin-view-users" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-xl font-bold mb-4 flex items-center">
-                    <i class="fas fa-users text-blue-600 mr-2"></i>All Users
-                </h3>
-                <div id="admin-users-list" class="space-y-3">
-                    <p class="text-gray-500">Loading...</p>
-                </div>
+<!-- Task Submission Modal -->
+<div id="task-modal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl p-6 max-w-md w-full fade-in">
+        <h3 class="text-xl font-bold mb-4 flex items-center">
+            <i class="fas fa-upload text-blue-600 mr-2"></i>Submit Your Work
+        </h3>
+        <p class="text-gray-600 mb-4">Please upload a screenshot as proof of completion.</p>
+        <form id="task-submit-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Screenshot (Required)</label>
+                <input type="file" id="task-screenshot" accept="image/*" required class="w-full p-3 border rounded-lg">
             </div>
-        </div>
-
-        <!-- Withdrawals Tab -->
-        <div id="admin-view-withdrawals" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-xl font-bold mb-4 flex items-center">
-                    <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>Withdrawal Requests
-                </h3>
-                <div id="admin-withdrawals-list" class="space-y-3">
-                    <p class="text-gray-500">Loading...</p>
-                </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Comments (Optional)</label>
+                <textarea id="task-comments" rows="3" class="w-full p-3 border rounded-lg"></textarea>
             </div>
-        </div>
-
-        <!-- Seed Jobs Tab -->
-        <div id="admin-view-seed" class="hidden">
-            <div class="max-w-2xl mx-auto">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-database text-purple-600 mr-2"></i>Seed 20 Jobs to Database
-                    </h3>
-                    <p class="text-gray-600 mb-4">Click the button below to add 20 sample jobs to the database. This will help you test the platform.</p>
-                    <button onclick="seedJobs()" class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
-                        <i class="fas fa-seedling mr-2"></i>Seed 20 Jobs Now
-                    </button>
-                    <div id="seed-result" class="mt-4"></div>
-                </div>
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeTaskModal()" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">Cancel</button>
+                <button type="submit" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">Submit</button>
             </div>
-        </div>
-
+        </form>
     </div>
 </div>
 
@@ -207,337 +368,449 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Load stats immediately since no login is required
-loadAdminStats();
+let currentUser = null;
+let currentTaskId = null;
 
-// ==================== TAB SWITCHING ====================
-function switchAdminTab(tabName) {
-    const tabs = ['overview', 'postjob', 'submissions', 'users', 'withdrawals', 'seed'];
-    tabs.forEach(tab => {
-        document.getElementById(`admin-view-${tab}`).classList.add('hidden');
-        document.getElementById(`admin-tab-${tab}`).classList.remove('tab-active');
-        document.getElementById(`admin-tab-${tab}`).classList.add('text-gray-600');
-    });
-    
-    document.getElementById(`admin-view-${tabName}`).classList.remove('hidden');
-    document.getElementById(`admin-tab-${tabName}`).classList.add('tab-active');
-    document.getElementById(`admin-tab-${tabName}`).classList.remove('text-gray-600');
+// ==================== AUTHENTICATION ====================
+function switchAuthTab(tab) {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
 
-    if (tabName === 'submissions') loadAdminSubmissions();
-    if (tabName === 'users') loadAdminUsers();
-    if (tabName === 'withdrawals') loadAdminWithdrawals();
-}
-
-// ==================== ADMIN STATS ====================
-async function loadAdminStats() {
-    try {
-        const usersSnap = await db.collection('users').get();
-        const jobsSnap = await db.collection('jobs').get();
-        const pendingSnap = await db.collection('submissions').where('status', '==', 'pending').get();
-        const withdrawalsSnap = await db.collection('withdrawals').get();
-
-        document.getElementById('admin-stat-users').textContent = usersSnap.size;
-        document.getElementById('admin-stat-jobs').textContent = jobsSnap.size;
-        document.getElementById('admin-stat-pending').textContent = pendingSnap.size;
-
-        let totalWithdrawals = 0;
-        withdrawalsSnap.forEach(doc => {
-            totalWithdrawals += doc.data().amount || 0;
-        });
-        document.getElementById('admin-stat-withdrawals').textContent = totalWithdrawals.toFixed(2);
-    } catch (error) {
-        console.error('Error loading stats:', error);
+    if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        loginTab.classList.add('bg-white', 'shadow', 'text-blue-600');
+        loginTab.classList.remove('text-gray-600');
+        registerTab.classList.remove('bg-white', 'shadow', 'text-blue-600');
+        registerTab.classList.add('text-gray-600');
+    } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        registerTab.classList.add('bg-white', 'shadow', 'text-blue-600');
+        registerTab.classList.remove('text-gray-600');
+        loginTab.classList.remove('bg-white', 'shadow', 'text-blue-600');
+        loginTab.classList.add('text-gray-600');
     }
 }
 
-// ==================== POST JOB ====================
-document.getElementById('admin-job-form').addEventListener('submit', async (e) => {
+// Login Handler
+document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    try {
-        await db.collection('jobs').add({
-            title: document.getElementById('admin-job-title').value,
-            description: document.getElementById('admin-job-desc').value,
-            price: parseFloat(document.getElementById('admin-job-price').value),
-            category: document.getElementById('admin-job-cat').value,
-            link: document.getElementById('admin-job-link').value,
-            status: 'active',
-            createdBy: 'admin_direct',
-            createdAt: new Date().toISOString()
-        });
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
 
-        showNotification('Job posted successfully!', 'success');
-        document.getElementById('admin-job-form').reset();
-        loadAdminStats();
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        showNotification('Login successful!', 'success');
     } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
+        showNotification(error.message, 'error');
     }
 });
 
-// ==================== SUBMISSIONS ====================
-async function loadAdminSubmissions() {
-    const container = document.getElementById('admin-pending-submissions');
-    container.innerHTML = '<p class="text-gray-500">Loading...</p>';
+// Register Handler
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const phone = document.getElementById('reg-phone').value;
+    const password = document.getElementById('reg-password').value;
 
     try {
-        const snapshot = await db.collection('submissions')
-            .where('status', '==', 'pending')
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        
+        await db.collection('users').doc(userCredential.user.uid).set({
+            name: name,
+            email: email,
+            phone: phone,
+            balance: 0,
+            totalEarnings: 0,
+            pendingBalance: 0,
+            completedTasks: 0,
+            apiKey: '',
+            createdAt: new Date().toISOString(),
+            isAdmin: false
+        });
+
+        showNotification('Account created successfully!', 'success');
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+});
+
+// Logout Handler
+function logout() {
+    auth.signOut();
+    showNotification('Logged out successfully', 'success');
+}
+
+// Auth State Observer
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('app-section').classList.remove('hidden');
+        document.getElementById('user-email').textContent = user.email;
+        await loadUserData();
+        loadJobs();
+        loadMyWork();
+        loadWithdrawHistory();
+    } else {
+        currentUser = null;
+        document.getElementById('auth-section').classList.remove('hidden');
+        document.getElementById('app-section').classList.add('hidden');
+    }
+});
+
+// ==================== USER DATA ====================
+async function loadUserData() {
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            document.getElementById('stat-total').textContent = userData.totalEarnings?.toFixed(2) || '0.00';
+            document.getElementById('stat-available').textContent = userData.balance?.toFixed(2) || '0.00';
+            document.getElementById('stat-pending').textContent = userData.pendingBalance?.toFixed(2) || '0.00';
+            document.getElementById('stat-tasks').textContent = userData.completedTasks || 0;
+            document.getElementById('withdraw-balance').textContent = userData.balance?.toFixed(2) || '0.00';
+            document.getElementById('user-api-key').textContent = userData.apiKey || 'Not generated yet';
+        }
+        loadRecentActivity();
+    } catch (error) {
+        console.error('Error loading user data:', error);
+    }
+}
+
+// ==================== TAB SWITCHING ====================
+function switchTab(tabName) {
+    const tabs = ['dashboard', 'jobs', 'mywork', 'withdraw', 'api'];
+    tabs.forEach(tab => {
+        document.getElementById(`view-${tab}`).classList.add('hidden');
+        document.getElementById(`tab-${tab}`).classList.remove('text-blue-600', 'border-b-3', 'border-blue-600');
+        document.getElementById(`tab-${tab}`).classList.add('text-gray-600');
+    });
+    
+    document.getElementById(`view-${tabName}`).classList.remove('hidden');
+    document.getElementById(`tab-${tabName}`).classList.add('text-blue-600', 'border-b-3', 'border-blue-600');
+    document.getElementById(`tab-${tabName}`).classList.remove('text-gray-600');
+}
+
+// ==================== JOBS ====================
+async function loadJobs() {
+    const container = document.getElementById('jobs-list');
+    container.innerHTML = '<div class="loader"></div>';
+
+    try {
+        const snapshot = await db.collection('jobs')
+            .where('status', '==', 'active')
             .orderBy('createdAt', 'desc')
+            .limit(50)
             .get();
 
         container.innerHTML = '';
         
         if (snapshot.empty) {
-            container.innerHTML = '<p class="text-gray-500">No pending submissions.</p>';
+            container.innerHTML = '<p class="text-center col-span-3 text-gray-500 py-10">No jobs available right now. Check back later!</p>';
             return;
         }
 
         snapshot.forEach(doc => {
-            const sub = doc.data();
+            const job = doc.data();
+            const categoryIcons = {
+                'youtube': 'fab fa-youtube',
+                'facebook': 'fab fa-facebook',
+                'instagram': 'fab fa-instagram',
+                'twitter': 'fab fa-twitter',
+                'signup': 'fas fa-user-plus',
+                'survey': 'fas fa-poll',
+                'general': 'fas fa-tasks'
+            };
+            const icon = categoryIcons[job.category] || 'fas fa-tasks';
+
             const card = `
-                <div class="p-4 bg-gray-50 rounded-lg border hover:shadow-md transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <p class="font-bold text-lg">${sub.jobTitle}</p>
-                            <p class="text-sm text-gray-600">${sub.userEmail}</p>
-                        </div>
-                        <p class="text-green-600 font-bold text-xl">$${sub.price?.toFixed(2)}</p>
+                <div class="job-card bg-white p-5 rounded-xl shadow hover:shadow-lg transition border border-gray-100">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full uppercase font-semibold">
+                            <i class="${icon} mr-1"></i>${job.category || 'General'}
+                        </span>
+                        <span class="text-green-600 font-bold text-xl">$${job.price?.toFixed(2)}</span>
                     </div>
-                    ${sub.screenshot ? `<img src="${sub.screenshot}" class="w-full h-32 object-cover rounded mb-3">` : ''}
-                    ${sub.comments ? `<p class="text-sm text-gray-700 mb-3"><strong>Comments:</strong> ${sub.comments}</p>` : ''}
-                    <div class="flex space-x-2">
-                        <button onclick="approveSubmission('${doc.id}', '${sub.userId}', ${sub.price})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition">
-                            <i class="fas fa-check mr-1"></i>Approve
-                        </button>
-                        <button onclick="rejectSubmission('${doc.id}')" class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition">
-                            <i class="fas fa-times mr-1"></i>Reject
-                        </button>
-                    </div>
+                    <h3 class="text-lg font-bold mb-2 text-gray-800">${job.title}</h3>
+                    <p class="text-gray-600 text-sm mb-4 h-12 overflow-hidden">${job.description || 'No description'}</p>
+                    <button onclick="startTask('${doc.id}', '${job.title}')" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition">
+                        <i class="fas fa-play mr-2"></i>Start Task
+                    </button>
                 </div>
             `;
             container.innerHTML += card;
         });
     } catch (error) {
-        console.error('Error loading submissions:', error);
-        container.innerHTML = '<p class="text-red-500">Error loading</p>';
+        console.error('Error loading jobs:', error);
+        container.innerHTML = '<p class="text-red-500 text-center col-span-3">Error loading jobs</p>';
     }
 }
 
-async function approveSubmission(subId, userId, price) {
-    try {
-        await db.collection('submissions').doc(subId).update({
-            status: 'approved'
-        });
-
-        await db.collection('users').doc(userId).update({
-            balance: firebase.firestore.FieldValue.increment(price),
-            totalEarnings: firebase.firestore.FieldValue.increment(price),
-            completedTasks: firebase.firestore.FieldValue.increment(1)
-        });
-
-        showNotification('Submission approved!', 'success');
-        loadAdminSubmissions();
-        loadAdminStats();
-    } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
-    }
+function startTask(jobId, jobTitle) {
+    currentTaskId = jobId;
+    document.getElementById('task-modal').classList.remove('hidden');
 }
 
-async function rejectSubmission(subId) {
-    try {
-        await db.collection('submissions').doc(subId).update({
-            status: 'rejected'
-        });
-        showNotification('Submission rejected', 'success');
-        loadAdminSubmissions();
-    } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
-    }
+function closeTaskModal() {
+    document.getElementById('task-modal').classList.add('hidden');
+    document.getElementById('task-submit-form').reset();
+    currentTaskId = null;
 }
 
-// ==================== USERS ====================
-async function loadAdminUsers() {
-    const container = document.getElementById('admin-users-list');
-    container.innerHTML = '<p class="text-gray-500">Loading...</p>';
+// Task Submission
+document.getElementById('task-submit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const screenshot = document.getElementById('task-screenshot').files[0];
+    const comments = document.getElementById('task-comments').value;
 
-    try {
-        const snapshot = await db.collection('users').get();
+    if (!screenshot) {
+        showNotification('Please upload a screenshot', 'error');
+        return;
+    }
 
-        container.innerHTML = '';
-        
-        if (snapshot.empty) {
-            container.innerHTML = '<p class="text-gray-500">No users found.</p>';
-            return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64Image = e.target.result;
+
+        try {
+            const jobDoc = await db.collection('jobs').doc(currentTaskId).get();
+            const jobData = jobDoc.data();
+
+            await db.collection('submissions').add({
+                jobId: currentTaskId,
+                jobTitle: jobData.title,
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                screenshot: base64Image,
+                comments: comments,
+                price: jobData.price,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
+
+            showNotification('Task submitted successfully! Waiting for approval.', 'success');
+            closeTaskModal();
+            loadMyWork();
+        } catch (error) {
+            showNotification('Error submitting task: ' + error.message, 'error');
         }
+    };
+    reader.readAsDataURL(screenshot);
+});
 
-        snapshot.forEach(doc => {
-            const user = doc.data();
-            const item = `
-                <div class="p-4 bg-gray-50 rounded-lg border hover:shadow-md transition">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-bold">${user.name || 'Unknown'}</p>
-                            <p class="text-sm text-gray-600">${user.email}</p>
-                            <p class="text-xs text-gray-500">Phone: ${user.phone || 'N/A'}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-green-600 font-bold">$${user.balance?.toFixed(2) || '0.00'}</p>
-                            <p class="text-xs text-gray-500">${user.completedTasks || 0} tasks</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.innerHTML += item;
-        });
-    } catch (error) {
-        console.error('Error loading users:', error);
-        container.innerHTML = '<p class="text-red-500">Error loading</p>';
-    }
-}
-
-// ==================== WITHDRAWALS ====================
-async function loadAdminWithdrawals() {
-    const container = document.getElementById('admin-withdrawals-list');
+// ==================== MY WORK ====================
+async function loadMyWork() {
+    const container = document.getElementById('mywork-list');
     container.innerHTML = '<p class="text-gray-500">Loading...</p>';
 
     try {
-        const snapshot = await db.collection('withdrawals')
+        const snapshot = await db.collection('submissions')
+            .where('userId', '==', currentUser.uid)
             .orderBy('createdAt', 'desc')
             .get();
 
         container.innerHTML = '';
         
         if (snapshot.empty) {
-            container.innerHTML = '<p class="text-gray-500">No withdrawal requests.</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center py-10">No submissions yet. Start working!</p>';
             return;
         }
 
         snapshot.forEach(doc => {
-            const wd = doc.data();
+            const sub = doc.data();
             const statusColor = {
                 'pending': 'bg-yellow-100 text-yellow-800',
                 'approved': 'bg-green-100 text-green-800',
                 'rejected': 'bg-red-100 text-red-800'
             };
 
-            const item = `
-                <div class="p-4 bg-gray-50 rounded-lg border hover:shadow-md transition">
+            const card = `
+                <div class="bg-white p-5 rounded-xl shadow border hover:shadow-lg transition">
                     <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <p class="font-bold">${wd.userEmail}</p>
-                            <p class="text-sm text-gray-600">${wd.method}: ${wd.account}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-green-600 font-bold text-xl">$${wd.amount?.toFixed(2)}</p>
-                            <span class="${statusColor[wd.status]} px-2 py-1 rounded text-xs font-semibold uppercase">${wd.status}</span>
-                        </div>
+                        <h3 class="font-bold text-lg">${sub.jobTitle}</h3>
+                        <span class="${statusColor[sub.status]} px-3 py-1 rounded-full text-xs font-semibold uppercase">${sub.status}</span>
                     </div>
-                    ${wd.status === 'pending' ? `
-                        <div class="flex space-x-2">
-                            <button onclick="approveWithdrawal('${doc.id}', '${wd.userId}', ${wd.amount})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition">
-                                <i class="fas fa-check mr-1"></i>Approve
-                            </button>
-                            <button onclick="rejectWithdrawal('${doc.id}', '${wd.userId}', ${wd.amount})" class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition">
-                                <i class="fas fa-times mr-1"></i>Reject
-                            </button>
-                        </div>
-                    ` : ''}
+                    <p class="text-sm text-gray-600 mb-2">Submitted: ${new Date(sub.createdAt).toLocaleString()}</p>
+                    <p class="text-green-600 font-bold text-lg">$${sub.price?.toFixed(2)}</p>
+                </div>
+            `;
+            container.innerHTML += card;
+        });
+    } catch (error) {
+        console.error('Error loading my work:', error);
+        container.innerHTML = '<p class="text-red-500">Error loading submissions</p>';
+    }
+}
+
+// ==================== WITHDRAW ====================
+document.getElementById('withdraw-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+    const method = document.getElementById('withdraw-method').value;
+    const account = document.getElementById('withdraw-account').value;
+
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+
+        if (amount > userData.balance) {
+            showNotification('Insufficient balance', 'error');
+            return;
+        }
+
+        if (amount < 5) {
+            showNotification('Minimum withdrawal is $5', 'error');
+            return;
+        }
+
+        await db.collection('withdrawals').add({
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            amount: amount,
+            method: method,
+            account: account,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+        });
+
+        showNotification('Withdrawal request submitted!', 'success');
+        document.getElementById('withdraw-form').reset();
+        loadWithdrawHistory();
+    } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+    }
+});
+
+async function loadWithdrawHistory() {
+    const container = document.getElementById('withdraw-history');
+    
+    try {
+        const snapshot = await db.collection('withdrawals')
+            .where('userId', '==', currentUser.uid)
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        container.innerHTML = '';
+        
+        if (snapshot.empty) {
+            container.innerHTML = '<p class="text-gray-500">No withdrawal requests yet.</p>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const wd = doc.data();
+            const statusColor = {
+                'pending': 'text-yellow-600',
+                'approved': 'text-green-600',
+                'rejected': 'text-red-600'
+            };
+
+            const item = `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div>
+                        <p class="font-semibold">$${wd.amount?.toFixed(2)} - ${wd.method}</p>
+                        <p class="text-xs text-gray-500">${new Date(wd.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <span class="${statusColor[wd.status]} font-semibold uppercase text-sm">${wd.status}</span>
                 </div>
             `;
             container.innerHTML += item;
         });
     } catch (error) {
-        console.error('Error loading withdrawals:', error);
-        container.innerHTML = '<p class="text-red-500">Error loading</p>';
+        console.error('Error loading withdraw history:', error);
     }
 }
 
-async function approveWithdrawal(wdId, userId, amount) {
+// ==================== API SYSTEM ====================
+async function generateApiKey() {
+    const newKey = 'MJ_' + Math.random().toString(36).substr(2, 32);
+    
     try {
-        await db.collection('withdrawals').doc(wdId).update({
-            status: 'approved'
+        await db.collection('users').doc(currentUser.uid).update({
+            apiKey: newKey
         });
-
-        await db.collection('users').doc(userId).update({
-            balance: firebase.firestore.FieldValue.increment(-amount)
-        });
-
-        showNotification('Withdrawal approved!', 'success');
-        loadAdminWithdrawals();
-        loadAdminStats();
+        document.getElementById('user-api-key').textContent = newKey;
+        showNotification('New API key generated!', 'success');
     } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
+        showNotification('Error generating key: ' + error.message, 'error');
     }
 }
 
-async function rejectWithdrawal(wdId, userId, amount) {
-    try {
-        await db.collection('withdrawals').doc(wdId).update({
-            status: 'rejected'
-        });
-
-        showNotification('Withdrawal rejected', 'success');
-        loadAdminWithdrawals();
-    } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
-    }
-}
-
-// ==================== SEED 20 JOBS ====================
-async function seedJobs() {
-    const resultDiv = document.getElementById('seed-result');
-    resultDiv.innerHTML = '<p class="text-blue-600"><i class="fas fa-spinner fa-spin mr-2"></i>Seeding jobs...</p>';
-
-    const jobs = [
-        { title: "Watch YouTube Video - 5 Minutes", description: "Watch the complete video and like it.", price: 0.05, category: "youtube", link: "https://youtube.com/watch?v=example1" },
-        { title: "Like Facebook Page", description: "Like our Facebook page.", price: 0.03, category: "facebook", link: "https://facebook.com/examplepage" },
-        { title: "Instagram Follow & Like 3 Posts", description: "Follow our Instagram account.", price: 0.08, category: "instagram", link: "https://instagram.com/exampleaccount" },
-        { title: "Twitter Retweet & Follow", description: "Follow our Twitter account.", price: 0.06, category: "twitter", link: "https://twitter.com/exampleaccount" },
-        { title: "Sign Up for Free Trial", description: "Create a free account.", price: 0.50, category: "signup", link: "https://example.com/signup" },
-        { title: "Complete Online Survey", description: "Answer 10 questions.", price: 0.30, category: "survey", link: "https://survey.example.com/123" },
-        { title: "Watch YouTube Playlist", description: "Watch all 10 videos.", price: 0.25, category: "youtube", link: "https://youtube.com/playlist?list=example" },
-        { title: "Share Facebook Post", description: "Share to your timeline.", price: 0.04, category: "facebook", link: "https://facebook.com/post/example" },
-        { title: "Download Mobile App", description: "Download and open app.", price: 0.40, category: "general", link: "https://play.google.com/store/apps/details?id=com.example" },
-        { title: "Write Product Review", description: "Write a review on Amazon.", price: 1.00, category: "general", link: "https://amazon.com/product/example" },
-        { title: "Subscribe to YouTube Channel", description: "Subscribe and notify.", price: 0.10, category: "youtube", link: "https://youtube.com/channel/example" },
-        { title: "Join Telegram Group", description: "Join and say hi.", price: 0.05, category: "general", link: "https://t.me/examplegroup" },
-        { title: "Visit Website & Read Article", description: "Read the featured article.", price: 0.02, category: "general", link: "https://blog.example.com/article" },
-        { title: "Complete Email Registration", description: "Verify email.", price: 0.20, category: "signup", link: "https://example.com/register" },
-        { title: "Watch Live Stream", description: "Stay for 15 mins.", price: 0.35, category: "youtube", link: "https://youtube.com/live/example" },
-        { title: "Comment on YouTube Video", description: "Leave a positive comment.", price: 0.07, category: "youtube", link: "https://youtube.com/watch?v=example2" },
-        { title: "Follow TikTok Account", description: "Follow and like 5 videos.", price: 0.09, category: "general", link: "https://tiktok.com/@example" },
-        { title: "Market Research Survey", description: "Answer 20 questions.", price: 0.60, category: "survey", link: "https://survey.example.com/456" },
-        { title: "Share Instagram Story", description: "Share post to story.", price: 0.12, category: "instagram", link: "https://instagram.com/p/example" },
-        { title: "Create Forum Account", description: "Make your first post.", price: 0.30, category: "signup", link: "https://forum.example.com/register" }
-    ];
+document.getElementById('api-test-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const resultDiv = document.getElementById('api-test-result');
+    resultDiv.innerHTML = '<p class="text-blue-600">Sending request...</p>';
 
     try {
-        let successCount = 0;
-        for (const job of jobs) {
-            await db.collection('jobs').add({
-                ...job,
-                status: 'active',
-                createdBy: 'admin_seed',
-                createdAt: new Date().toISOString()
-            });
-            successCount++;
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+
+        if (!userData.apiKey) {
+            resultDiv.innerHTML = '<p class="text-red-600">Generate an API key first!</p>';
+            return;
         }
 
-        resultDiv.innerHTML = `
-            <div class="bg-green-100 border border-green-400 text-green-700 p-4 rounded-lg">
-                <strong><i class="fas fa-check-circle mr-2"></i>Success!</strong>
-                ${successCount} jobs have been seeded to the database.
-            </div>
-        `;
-        loadAdminStats();
+        await db.collection('jobs').add({
+            title: document.getElementById('api-test-title').value,
+            description: 'Posted via API',
+            price: parseFloat(document.getElementById('api-test-price').value),
+            link: document.getElementById('api-test-link').value,
+            category: 'api',
+            status: 'active',
+            createdBy: 'api',
+            apiUserId: currentUser.uid,
+            createdAt: new Date().toISOString()
+        });
+
+        resultDiv.innerHTML = '<div class="bg-green-100 border border-green-400 text-green-700 p-4 rounded-lg"><strong>Success!</strong> Job posted via API.</div>';
     } catch (error) {
-        resultDiv.innerHTML = `
-            <div class="bg-red-100 border border-red-400 text-red-700 p-4 rounded-lg">
-                <strong>Error:</strong> ${error.message}
-            </div>
-        `;
+        resultDiv.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 p-4 rounded-lg">Error: ${error.message}</div>`;
+    }
+});
+
+// ==================== RECENT ACTIVITY ====================
+async function loadRecentActivity() {
+    const container = document.getElementById('activity-list');
+    
+    try {
+        const snapshot = await db.collection('submissions')
+            .where('userId', '==', currentUser.uid)
+            .orderBy('createdAt', 'desc')
+            .limit(5)
+            .get();
+
+        container.innerHTML = '';
+        
+        if (snapshot.empty) {
+            container.innerHTML = '<p class="text-gray-500">No recent activity</p>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const sub = doc.data();
+            const item = `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div>
+                        <p class="font-semibold text-sm">${sub.jobTitle}</p>
+                        <p class="text-xs text-gray-500">${new Date(sub.createdAt).toLocaleString()}</p>
+                    </div>
+                    <span class="text-green-600 font-bold">$${sub.price?.toFixed(2)}</span>
+                </div>
+            `;
+            container.innerHTML += item;
+        });
+    } catch (error) {
+        console.error('Error loading activity:', error);
     }
 }
 
@@ -557,4 +830,4 @@ function showNotification(message, type) {
 </script>
 
 </body>
-  </html>
+</html>
